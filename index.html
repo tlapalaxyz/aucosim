@@ -15,11 +15,11 @@ main{display:grid;grid-template-columns:320px 1fr;gap:12px;padding:12px 14px;max
 section,.p{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-bottom:10px}
 label{display:block;font-size:12px;color:var(--mut);margin-top:6px}
 input,select,button{width:100%;box-sizing:border-box;padding:5px 7px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);font:inherit}
-button{cursor:pointer;font-weight:600;transition:opacity .15s}button:hover{opacity:.85}
+button{cursor:pointer;font-weight:600;transition:opacity .15s}button:hover{opacity:.85}button:disabled{opacity:.4;cursor:default}
 button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
 button.tab{width:auto;padding:4px 11px;border-radius:99px;font-size:13px}
 button.tab.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-input:disabled,select:disabled{opacity:.4}.r{display:grid;grid-template-columns:1fr 1fr;gap:6px}.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+input:disabled,select:disabled{opacity:.4}.r{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .mu{color:var(--mut);font-size:12px;margin-top:6px;word-break:break-word}
 .b{padding:3px 10px;border-radius:99px;font-weight:600;font-size:13px;border:1px solid currentColor}
 .m{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin-bottom:10px}
@@ -34,7 +34,7 @@ details{font-size:13px}summary{cursor:pointer;font-weight:600}li{margin:3px 0}
 .box{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{border:1px solid var(--bd);padding:4px 7px;text-align:left}th{background:var(--bg)}
+.wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{border:1px solid var(--bd);padding:4px 7px;text-align:left}th{background:var(--bg)}
 </style></head><body>
 <header>
   <h1>🎛️ Simulador de lazo cerrado</h1>
@@ -42,6 +42,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{
   <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
     <button class="tab on" id="t-sim" onclick="setTab('sim')">📊 Simulador</button>
     <button class="tab" id="t-std" onclick="setTab('std')">📖 Laboratorio de Estudio</button>
+    <button class="tab" onclick="resetAll()" title="Borra los valores guardados">↺ Restablecer</button>
   </div>
 </header>
 <main>
@@ -53,14 +54,14 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{
   <option value="ol">Lazo abierto L(s) = C(s)·G(s)·H(s)</option>
   <option value="plant">Solo Planta G(s) (sin controlador)</option>
 </select></label>
-<div class="mu" id="moded">T(s) = C·G / (1 + C·G·H), &nbsp; S(s) = 1 / (1 + C·G·H)</div>
+<div class="mu" id="moded"></div>
 </section>
 
 <section><h2>1 · Planta G(s) y Aplicaciones</h2>
 <select id="pre"></select>
 <label>Numerador (mayor a menor potencia de s)<input id="gn" value="4"></label>
 <label>Denominador<input id="gd" value="1 1.2 4"></label>
-<div class="mu" id="gs"></div>
+<div class="mu mono" id="gs"></div>
 <div class="box" id="ginfo" style="font-size:12px"></div>
 </section>
 
@@ -85,12 +86,11 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{
 <div>
 <div id="err" hidden></div>
 
-<!-- VISTA 1: SIMULADOR -->
 <div id="view-sim">
   <div class="m" id="met"></div>
   <section style="padding:8px 10px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-      <h2 style="margin:0">Inspección de bloques (elige 2 o más para comparar)</h2>
+      <h2 style="margin:0">Inspección de bloques (elige 1 o más para comparar)</h2>
       <div class="chips" id="tf-chips" style="margin:0"></div>
     </div>
     <div id="tf-out" class="box mono" style="margin-top:6px"></div>
@@ -104,18 +104,18 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{
     <div class="p"><canvas id="c7"></canvas></div>
   </div>
   <section style="margin-top:10px"><details><summary>¿Cómo leer las gráficas y fórmulas de examen?</summary><ul>
-  <li><b>Polos de lazo cerrado:</b> si todos tienen $\text{Re}(s) &lt; 0$, el sistema es estable.</li>
-  <li><b>Sensibilidad $S(s)$ y Complementaria $T(s)$:</b> siempre cumplen $S(s) + T(s) = 1$ (cuando $H(s)=1$). Para rechazar perturbaciones y ruido de baja frecuencia se busca $|S(j\omega)| \ll 1$, y el pico $M_s = \max|S(j\omega)|$ mide robustez ($M_s &lt; 2$ o $6\text{ dB}$ es buen diseño).</li>
-  <li><b>Bode y Nyquist:</b> margen de fase ($MF &gt; 45^\circ$) y margen de ganancia ($MG &gt; 6\text{ dB}$) sobre $L(s) = C(s)G(s)H(s)$.</li>
+  <li><b>Polos de lazo cerrado:</b> si todos tienen Re(s) &lt; 0, el sistema es estable.</li>
+  <li><b>Sensibilidad S(s) y Complementaria T(s):</b> cumplen S(s) + T(s) = 1 (con H(s)=1). Para rechazar perturbaciones de baja frecuencia se busca |S(jω)| ≪ 1; el pico Ms = max|S(jω)| mide robustez (Ms &lt; 2, o 6 dB, es buen diseño).</li>
+  <li><b>Bode y Nyquist:</b> margen de fase (MF &gt; 45°) y margen de ganancia (MG &gt; 6 dB) sobre L(s) = C(s)G(s)H(s).</li>
+  <li><b>2.º orden:</b> Mp = e<sup>−πζ/√(1−ζ²)</sup>, ts ≈ 4/(ζωn), tp = π/ωd.</li>
   </ul></details></section>
 </div>
 
-<!-- VISTA 2: LABORATORIO DE ESTUDIO -->
 <div id="view-std" hidden>
   <div class="grid2">
     <section>
       <h2>A · Ecuación Diferencial → Función de Transferencia</h2>
-      <div class="mu" style="margin-top:0">Escribe la EDO lineal (ej: <span class="mono">2 y'' + 1.2 y' + 8 y = 4 u' + 12 u</span> o <span class="mono">5 dy/dt + y = 3 u</span>)</div>
+      <div class="mu" style="margin-top:0">Escribe la EDO lineal (ej: <span class="mono">2 y'' + 1.2 y' + 8 y = 4 u' + 12 u</span> o <span class="mono">5 dy/dt + y = 3 u</span>). Se acepta y(t), d2y/dt2 y y(2).</div>
       <label>Ecuación diferencial<input id="edo-in" value="2 y'' + 1.2 y' + 8 y = 12 u" class="mono"></label>
       <div class="r" style="margin-top:6px">
         <button class="pri" onclick="parseEDO()">Convertir a G(s)</button>
@@ -126,21 +126,26 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}td,th{
 
     <section>
       <h2>B · Identificación de parámetros (K, τ, ωn, ζ)</h2>
-      <div class="mu" style="margin-top:0">Analiza la planta actual $G(s)$ o edita los coeficientes de $G(s)$ a la izquierda.</div>
+      <div class="mu" style="margin-top:0">Analiza la planta actual G(s); edítala a la izquierda o carga una EDO.</div>
       <div id="param-out" class="box"></div>
     </section>
   </div>
 
   <div class="grid2">
     <section>
-      <h2>C · Error en Estado Estacionario ($e_{ss}$) y Tipo</h2>
-      <div class="mu" style="margin-top:0">Calculado a partir del lazo abierto $L(s) = C(s)G(s)H(s)$ (Teorema del Valor Final).</div>
-      <div id="ess-out" class="box"></div>
+      <h2>C · Error en Estado Estacionario (e<sub>ss</sub>) y Tipo</h2>
+      <div class="mu" style="margin-top:0">Calculado sobre el lazo abierto L(s) = C(s)G(s)H(s) con el Teorema del Valor Final.</div>
+      <div id="ess-out" class="box wrap"></div>
     </section>
 
     <section>
       <h2>D · Diseño por Asignación de Polos (Pole Placement)</h2>
-      <div class="mu" style="margin-top:0">Ubica los polos de lazo cerrado deseados para calcular $K_p, K_i, K_d$ sobre la planta actual $G(s)$ (con $H(s)=1$).</div>
+      <div class="mu" style="margin-top:0">Calcula Kp, Ki, Kd sobre G(s) (con H(s)=1). La planta no debe tener ceros finitos.</div>
+      <div class="r">
+        <label>Sobrepaso Mp (%)<input id="spec-mp" type="number" value="10" step="any" min="0.01" max="99"></label>
+        <label>Tiempo de establ. ts (s)<input id="spec-ts" type="number" value="2" step="any" min="0.01"></label>
+      </div>
+      <button onclick="genPoles()" style="margin-top:6px">Generar polos desde Mp y ts</button>
       <label>Polos deseados (separados por coma, ej: <span class="mono">-2+3j, -2-3j</span> o <span class="mono">-3, -4, -5</span>)<input id="des-pol" value="-2+2.5j, -2-2.5j" class="mono"></label>
       <div class="r" style="margin-top:6px">
         <button class="pri" onclick="designPoles()">Calcular controlador</button>
@@ -160,9 +165,11 @@ pe=(p,s)=>{let r=[0,0];for(const c of p){r=cm(r,s);r[0]+=c}return r},
 pm=(a,b)=>{const r=Array(a.length+b.length-1).fill(0);a.forEach((x,i)=>b.forEach((y,j)=>r[i+j]+=x*y));return r},
 pa=(a,b)=>{const n=Math.max(a.length,b.length),A=Array(n-a.length).fill(0).concat(a),B=Array(n-b.length).fill(0).concat(b);return A.map((v,i)=>v+B[i])},
 tr=p=>{let i=0;while(i<p.length-1&&Math.abs(p[i])<1e-12)i++;return p.slice(i)},
-f=(v,n=3)=>isFinite(v)?String(+v.toPrecision(n)):'—';
+f=(v,n=3)=>isFinite(v)?String(+v.toPrecision(n)):(v>0?'∞':v<0?'−∞':'—'),
+store=(k,v)=>{try{v===undefined?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}},
+load=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 
-function roots(p){p=tr(p);let z0=0;while(p.length>1&&Math.abs(p[p.length-1])<1e-12){p.pop();z0++}
+function roots(p){p=tr(p.slice());let z0=0;while(p.length>1&&Math.abs(p[p.length-1])<1e-12){p.pop();z0++}
  const n=p.length-1,out=Array(z0).fill().map(()=>[0,0]);if(n<1)return out;
  const a=p.map(v=>v/p[0]);let R=0;for(let i=1;i<=n;i++)R=Math.max(R,Math.abs(a[i])**(1/i));R=2*R||1;
  let z=Array.from({length:n},(_,k)=>[R*Math.cos(2*Math.PI*k/n+.5),R*Math.sin(2*Math.PI*k/n+.5)]);
@@ -170,29 +177,27 @@ function roots(p){p=tr(p);let z0=0;while(p.length>1&&Math.abs(p[p.length-1])<1e-
   const d=cd(pe(a,z[k]),den);z[k]=[z[k][0]-d[0],z[k][1]-d[1]];ch=Math.max(ch,Math.hypot(...d))}if(ch<1e-13)break}
  return out.concat(z)}
 
-// Presets con aplicaciones físicas reales
 const PR=[
   ['1.er orden: 2/(s+1)','2','1 1','Sistema genérico de 1.er orden (K=2, τ=1 s).'],
   ['2.º orden subamortiguado: 4/(s²+1.2s+4)','4','1 1.2 4','Subamortiguado clásico (K=1, ωn=2 rad/s, ζ=0.3).'],
-  ['2.º orden sobreamortiguado: 3/((s+1)(s+3))','3','1 4 3','Sobreamortiguado con polos reales en -1 y -3 (ζ=1.15).'],
-  ['3.er orden: 1/(s+1)³','1','1 3 3 1','Tres polos reales repetidos en s=-1. Inestable con P si Kp > 8.'],
+  ['2.º orden sobreamortiguado: 3/((s+1)(s+3))','3','1 4 3','Sobreamortiguado con polos reales en −1 y −3 (ζ=1.15).'],
+  ['3.er orden: 1/(s+1)³','1','1 3 3 1','Tres polos reales repetidos en s=−1. Inestable con P si Kp > 8.'],
   ['Integrador: 1/(s(s+1))','1','1 1 0','Sistema Tipo 1 (posición angular de motor sin fricción estática).'],
-  ['⚡ App · Circuito RC (R=10kΩ, C=100µF)','1','1 1','Voltaje de salida Vc(s)/Vin(s) = 1/(RCs + 1) con τ = RC = 1 s.'],
+  ['⚡ App · Circuito RC (R=10kΩ, C=100µF)','1','1 1','Vc(s)/Vin(s) = 1/(RCs + 1) con τ = RC = 1 s.'],
   ['⚙️ App · Motor DC (control de velocidad)','2.5','0.5 1','ω(s)/V(s) = Km/(τm·s + 1). Constante mecánica τm = 0.5 s.'],
-  ['🏗️ App · Masa-Resorte-Amortiguador','1','2 1.2 8','Posición X(s)/F(s) = 1/(ms² + bs + k) con m=2 kg, b=1.2 N·s/m, k=8 N/m.'],
-  ['💧 App · Tanque de nivel (linealizado)','0.8','4 1','Altura h(s)/Qin(s) = R/(A·R·s + 1), constante de tiempo hidráulica τ = 4 s.'],
+  ['🏗️ App · Masa-Resorte-Amortiguador','1','2 1.2 8','X(s)/F(s) = 1/(ms² + bs + k) con m=2 kg, b=1.2 N·s/m, k=8 N/m.'],
+  ['💧 App · Tanque de nivel (linealizado)','0.8','4 1','h(s)/Qin(s) = R/(A·R·s + 1), constante de tiempo hidráulica τ = 4 s.'],
   ['🚗 App · Suspensión automotriz (1/4 auto)','20 100','1 6 100','Dinámica vertical amortiguada con cero de transmisión.'],
   ['🚀 App · Péndulo invertido (inestable)','1','1 0 -9.8','Polo en +3.13 rad/s (lazo abierto inestable, requiere PD o PID).']
 ];
 $('pre').innerHTML=PR.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('')+'<option value="c">Personalizada</option>';
 $('pre').value=1;
 
-// Chips de bloques seleccionados para inspección
 const BLOCKS=['G','C','H','L','T','S'];
 let selBlocks=new Set(['G','T','S']);
 $('tf-chips').innerHTML=BLOCKS.map(b=>`<span class="chip ${selBlocks.has(b)?'on':''}" data-b="${b}" onclick="toggleBlock('${b}')">${b}(s)</span>`).join('');
 function toggleBlock(b){if(selBlocks.has(b)&&selBlocks.size>1)selBlocks.delete(b);else selBlocks.add(b);
- document.querySelectorAll('#tf-chips .chip').forEach(el=>el.classList.toggle('on',selBlocks.has(el.dataset.b)));run()}
+ document.querySelectorAll('#tf-chips .chip').forEach(el=>el.classList.toggle('on',selBlocks.has(el.dataset.b)));store('sb',[...selBlocks].join());run()}
 
 function setTab(t){
  $('view-sim').hidden=t!=='sim';$('view-std').hidden=t!=='std';
@@ -243,151 +248,120 @@ function plot(id,o){
 const PS=p=>{const n=p.length-1;return p.map((c,i)=>[c,n-i]).filter(([c])=>Math.abs(c)>1e-11).map(([c,e],i)=>{const a=Math.abs(c),b=e==0?f(a):(Math.abs(a-1)<1e-11?'':f(a)+' ')+'s'+(e>1?'^'+e:'');return(i?(c<0?' − ':' + '):(c<0?'−':''))+b}).join('')||'0'};
 const TFStr=(n,d)=>`(${PS(n)}) / (${PS(d)})`;
 function V(id){const v=parseFloat($(id).value);if(isNaN(v))throw Error('Completa todos los campos numéricos.');return v}
+const parseCoef=s=>{const a=s.trim().split(/[\s,;]+/).map(Number);if(!a.length||a.some(isNaN))throw Error('Coeficientes inválidos: usa números separados por espacios (ej. «1 1.2 4»).');return tr(a)};
 
-// Análisis de K, tau, wn, zeta y amortiguamiento para G(s)
+// Identificación de K, τ, ωn, ζ
 function analyzePlant(gn,gd){
  const deg=gd.length-1;
- let intOrder=0;while(intOrder<deg&&Math.abs(gd[gd.length-1-intOrder])<1e-11)intOrder++;
- const K=intOrder===0?gn[gn.length-1]/gd[gd.length-1]:gn[gn.length-1]/gd[gd.length-1-intOrder];
- let html=`<b>Orden del sistema:</b> ${deg} (Tipo ${intOrder})<br>`;
- html+=`<b>Ganancia estática $K$:</b> ${f(K)} ${intOrder>0?'(ganancia de velocidad/aceleración)':''}<br>`;
- if(deg===1&&intOrder===0){
+ let io=0;while(io<deg&&Math.abs(gd[gd.length-1-io])<1e-11)io++;
+ const K=gn[gn.length-1]/gd[gd.length-1-io];
+ let h=`<b>Orden del sistema:</b> ${deg} (Tipo ${io})<br><b>Ganancia estática K:</b> ${f(K)} ${io>0?'(ganancia de velocidad/aceleración)':''}<br>`;
+ const reduced=gd.slice(0,gd.length-io);
+ if(gn.length>1)h+=`<span style="color:var(--c4)">⚠️ G(s) tiene ceros finitos: K, τ, ωn y ζ se calculan del denominador.</span><br>`;
+ if(reduced.length===2&&io===0){
   const tau=gd[0]/gd[1];
-  html+=`<b>Constante de tiempo $\\tau$:</b> ${f(tau)} s &nbsp;|&nbsp; Polo: $s = ${f(-1/tau)}$<br>`;
-  html+=`<b>Forma estándar:</b> $G(s) = \\frac{${f(K)}}{${f(tau)}s + 1}$`;
- }else if(deg===2&&intOrder===0){
+  h+=`<b>Constante de tiempo τ:</b> ${f(tau)} s &nbsp;|&nbsp; Polo: s = ${f(-1/tau)}<br><b>Forma estándar:</b> G(s) = ${f(K)} / (${f(tau)}·s + 1)<br>`;
+  if(tau>0)h+=`<b>Tiempos típicos:</b> t<sub>s</sub>(2%) ≈ ${f(4*tau)} s, t<sub>r</sub>(10–90%) ≈ ${f(2.2*tau)} s`;
+  else h+=`<span style="color:var(--c2);font-weight:700">Inestable (τ &lt; 0)</span>`;
+ }else if(deg===2&&io===0){
   const a1=gd[1]/gd[0],a0=gd[2]/gd[0];
   if(a0>0){
-   const wn=Math.sqrt(a0),zeta=a1/(2*wn);
-   let cls='',col='var(--fg)';
-   if(zeta<0){cls='Inestable ($\\zeta < 0$)';col='var(--c2)'}
-   else if(Math.abs(zeta)<1e-6){cls='No amortiguado ($\\zeta = 0$)';col='var(--c4)'}
-   else if(zeta<1-1e-6){cls='Subamortiguado ($0 < \\zeta < 1$)';col='var(--ac)'}
-   else if(Math.abs(zeta-1)<=1e-6){cls='Críticamente amortiguado ($\\zeta = 1$)';col='var(--c3)'}
-   else{cls='Sobreamortiguado ($\\zeta > 1$)';col='var(--c5)'}
-   const wd=zeta<1&&zeta>=0?wn*Math.sqrt(1-zeta*zeta):0;
-   html+=`<b>Frecuencia natural $\\omega_n$:</b> ${f(wn)} rad/s<br>`;
-   html+=`<b>Factor de amortiguamiento $\\zeta$:</b> ${f(zeta)}<br>`;
-   html+=`<b>Clasificación:</b> <span style="color:${col};font-weight:700">${cls}</span><br>`;
-   if(wd>0)html+=`<b>Frecuencia amortiguada $\\omega_d$:</b> ${f(wd)} rad/s &nbsp;|&nbsp; $\\tau_{env} = \\frac{1}{\\zeta\\omega_n} = ${f(1/(zeta*wn))}$ s`;
-  }else{
-   html+=`<b>Clasificación:</b> <span style="color:var(--c2);font-weight:700">Inestable ($a_0 \\le 0$)</span>`;
-  }
+   const wn=Math.sqrt(a0),z=a1/(2*wn);let cls,col;
+   if(z<-1e-6){cls='Inestable (ζ &lt; 0)';col='--c2'}
+   else if(z<1e-6){cls='No amortiguado (ζ = 0)';col='--c4'}
+   else if(z<1-1e-6){cls='Subamortiguado (0 &lt; ζ &lt; 1)';col='--ac'}
+   else if(z<=1+1e-6){cls='Críticamente amortiguado (ζ = 1)';col='--c3'}
+   else{cls='Sobreamortiguado (ζ &gt; 1)';col='--c5'}
+   h+=`<b>Frecuencia natural ω<sub>n</sub>:</b> ${f(wn)} rad/s<br><b>Factor de amortiguamiento ζ:</b> ${f(z)}<br><b>Clasificación:</b> <span style="color:var(${col});font-weight:700">${cls}</span><br>`;
+   if(z>1e-6&&z<1-1e-6){const wd=wn*Math.sqrt(1-z*z),Mp=100*Math.exp(-Math.PI*z/Math.sqrt(1-z*z));
+    h+=`<b>ω<sub>d</sub>:</b> ${f(wd)} rad/s &nbsp;|&nbsp; <b>M<sub>p</sub>:</b> ${f(Mp)} % &nbsp;|&nbsp; <b>t<sub>p</sub>:</b> ${f(Math.PI/wd)} s &nbsp;|&nbsp; <b>t<sub>s</sub>(2%)</b> ≈ ${f(4/(z*wn))} s`}
+   else if(z>=1-1e-6)h+=`<b>Polos:</b> ${roots(gd).map(p=>f(p[0])).join(', ')}`;
+  }else h+=`<b>Clasificación:</b> <span style="color:var(--c2);font-weight:700">Inestable (a<sub>0</sub> ≤ 0)</span>`;
  }else{
-  const pG=roots(gd);
-  const dom=pG.reduce((a,b)=>a[0]>b[0]?a:b);
-  const tauDom=Math.abs(dom[0])>1e-9?-1/dom[0]:Infinity;
-  html+=`<b>Polo dominante de G(s):</b> ${f(dom[0])}${Math.abs(dom[1])>1e-6?' ± '+f(Math.abs(dom[1]))+'j':''}<br>`;
-  if(isFinite(tauDom)&&tauDom>0)html+=`<b>Constante de tiempo dominante $\\tau_{dom}$:</b> ${f(tauDom)} s`;
+  const dom=roots(gd).reduce((a,b)=>a[0]>b[0]?a:b),td=Math.abs(dom[0])>1e-9?-1/dom[0]:Infinity;
+  h+=`<b>Polo dominante de G(s):</b> ${f(dom[0])}${Math.abs(dom[1])>1e-6?' ± '+f(Math.abs(dom[1]))+'j':''}<br>`;
+  if(isFinite(td)&&td>0)h+=`<b>Constante de tiempo dominante τ<sub>dom</sub>:</b> ${f(td)} s`;
  }
- return html;
+ return h;
 }
 
 function calc(){
  $('err').hidden=true;
- const pr=s=>{const a=s.trim().split(/[\s,;]+/).map(Number);if(a.some(isNaN))throw Error('Coeficientes inválidos: usa números separados por espacios (ej. «1 1.2 4»).');return tr(a)};
- let gn=pr($('gn').value),gd=pr($('gd').value);
+ let gn=parseCoef($('gn').value),gd=parseCoef($('gd').value);
  if(gd[0]==0)throw Error('El denominador no puede ser cero.');
  if(gd.length<=gn.length)throw Error('La planta debe ser estrictamente propia: grado(den) > grado(num).');
  const g0=gd[0];gn=gn.map(v=>v/g0);gd=gd.map(v=>v/g0);
  $('gs').textContent='G(s) = '+TFStr(gn,gd);
 
- // Info de planta y parámetro
- const pInfo=analyzePlant(gn,gd);
- const preIdx=$('pre').value;
- const appNote=(preIdx!=='c'&&PR[preIdx])?`<div style="margin-bottom:4px;color:var(--ac)"><b>Aplicación:</b> ${PR[preIdx][3]}</div>`:'';
- $('ginfo').innerHTML=appNote+pInfo;
+ const pInfo=analyzePlant(gn,gd),pi=$('pre').value;
+ $('ginfo').innerHTML=((pi!=='c'&&PR[pi])?`<div style="margin-bottom:4px;color:var(--ac)"><b>Aplicación:</b> ${PR[pi][3]}</div>`:'')+pInfo;
  $('param-out').innerHTML=pInfo;
 
- // Modo de lazo
- const mode=$('mode').value;
- const isPlantOnly=mode==='plant',isOpenLoop=mode==='ol';
- $('sec-c').style.opacity=isPlantOnly?.45:1;
- $('sec-h').style.opacity=isPlantOnly?.45:1;
- $('moded').textContent=mode==='cl'?'T(s) = C·G / (1 + C·G·H),  S(s) = 1 / (1 + C·G·H)':mode==='ol'?'Lazo abierto: Y(s)/R(s) = C(s)·G(s)·H(s)':'Planta pura: Y(s)/R(s) = G(s)';
+ const mode=$('mode').value,isP=mode==='plant',isOL=mode==='ol';
+ $('sec-c').style.opacity=$('sec-h').style.opacity=isP?.45:1;
+ $('moded').textContent=mode==='cl'?'T(s) = C·G / (1 + C·G·H),  S(s) = 1 / (1 + C·G·H)':isOL?'Lazo abierto: Y(s)/R(s) = C(s)·G(s)·H(s)':'Planta pura: Y(s)/R(s) = G(s)';
 
- const ty=$('ct').value;$('ki').disabled=!/I/.test(ty)||isPlantOnly;$('kd').disabled=!/D/.test(ty)||isPlantOnly;$('tf').disabled=!/D/.test(ty)||isPlantOnly;
- $('ct').disabled=isPlantOnly;$('kp').disabled=isPlantOnly;$('ks').disabled=isPlantOnly;$('ts').disabled=isPlantOnly;
+ const ty=$('ct').value;$('ki').disabled=!/I/.test(ty)||isP;$('kd').disabled=!/D/.test(ty)||isP;$('tf').disabled=!/D/.test(ty)||isP;
+ $('ct').disabled=$('kp').disabled=$('ks').disabled=$('ts').disabled=isP;
 
- const kp=isPlantOnly?1:V('kp'),ki=(!isPlantOnly&&/I/.test(ty))?V('ki'):0,kd=(!isPlantOnly&&/D/.test(ty))?V('kd'):0,tf=Math.max(V('tf'),1e-4);
- const ks=isPlantOnly?1:V('ks'),ts=isPlantOnly?0:Math.max(V('ts'),0);
+ const kp=isP?1:V('kp'),ki=(!isP&&/I/.test(ty))?V('ki'):0,kd=(!isP&&/D/.test(ty))?V('kd'):0,tf=Math.max(V('tf'),1e-4);
+ const ks=isP?1:V('ks'),ts=isP?0:Math.max(V('ts'),0);
  $('da').disabled=$('dt0').disabled=$('dl').value=='none';
 
  let nC,dC;
- if(isPlantOnly){nC=[1];dC=[1]}
+ if(isP){nC=[1];dC=[1]}
  else if(ty=='P'){nC=[kp];dC=[1]}
  else if(ty=='PI'){nC=[kp,ki];dC=[1,0]}
  else if(ty=='PD'){nC=[kp*tf+kd,kp];dC=[tf,1]}
  else{nC=[kp*tf+kd,kp+ki*tf,ki];dC=[tf,1,0]}
 
  const nH=[ks],dH=ts>0?[ts,1]:[1];
- const nCG=pm(nC,gn),dCG=pm(dC,gd);
- const nL=pm(nCG,nH),dL=pm(dCG,dH);
+ const nCG=pm(nC,gn),dCG=pm(dC,gd),nL=pm(nCG,nH),dL=pm(dCG,dH);
+ // T = C·G/(1+L) = nCG·dH/(dL+nL);  S = 1/(1+L) = dL/(dL+nL)
+ const nT=tr(pm(nCG,dH)),dCL=tr(pa(dL,nL)),nS=tr(dL);
 
- // T(s) = C*G / (1 + C*G*H) = (nCG * dH) / (dL + nL)
- // S(s) = 1 / (1 + C*G*H) = dL / (dL + nL)
- const nT=tr(pm(nCG,dH));
- const dCL=tr(pa(dL,nL));
- const nS=tr(dL);
-
- const po=isPlantOnly?roots(gd):isOpenLoop?roots(dL):roots(dCL);
+ const po=isP?roots(gd):isOL?roots(dL):roots(dCL);
  const mx=po.length?Math.max(...po.map(p=>p[0])):-1;
 
- // Mostrar funciones de transferencia elegidas
- const tfMap={
-  G:'<b>G(s)</b> = '+TFStr(gn,gd),
-  C:'<b>C(s)</b> = '+TFStr(nC,dC),
-  H:'<b>H(s)</b> = '+TFStr(nH,dH),
-  L:'<b>L(s) = C·G·H</b> = '+TFStr(tr(nL),tr(dL)),
-  T:'<b>T(s) = Y/R</b> = '+TFStr(nT,dCL),
-  S:'<b>S(s) = 1/(1+L)</b> = '+TFStr(nS,dCL)
- };
- $('tf-out').innerHTML=[...selBlocks].map(b=>tfMap[b]).join('<br>');
+ const tfMap={G:'<b>G(s)</b> = '+TFStr(gn,gd),C:'<b>C(s)</b> = '+TFStr(nC,dC),H:'<b>H(s)</b> = '+TFStr(nH,dH),
+  L:'<b>L(s) = C·G·H</b> = '+TFStr(tr(nL),tr(dL)),T:'<b>T(s) = Y/R</b> = '+TFStr(nT,dCL),S:'<b>S(s) = 1/(1+L)</b> = '+TFStr(nS,dCL)};
+ $('tf-out').innerHTML=BLOCKS.filter(b=>selBlocks.has(b)).map(b=>tfMap[b]).join('<br>');
 
- // Estabilidad
- const st=$('st'),est=mx<-1e-6?['Estable','--c3']:mx<=1e-6?['Marginal','--c4']:['Inestable','--c2'];
- st.textContent=est[0];st.style.color=getComputedStyle(document.documentElement).getPropertyValue(est[1]);
+ const est=mx<-1e-6?['Estable','--c3']:mx<=1e-6?['Marginal','--c4']:['Inestable','--c2'];
+ $('st').textContent=est[0];$('st').style.color=getComputedStyle(document.documentElement).getPropertyValue(est[1]);
 
- // Error en estado estacionario teórico (sobre L(s))
- let sysType=0;while(sysType<dL.length-1&&Math.abs(dL[dL.length-1-sysType])<1e-11)sysType++;
- const kStat=nL[nL.length-1]/dL[dL.length-1-sysType];
- const inA=V('ia'),inTy=$('it').value;
- let Kp_err=sysType===0?kStat:Infinity;
- let Kv_err=sysType===0?0:sysType===1?kStat:Infinity;
- let Ka_err=sysType<2?0:sysType===2?kStat:Infinity;
- let essStep=isFinite(Kp_err)?inA/(1+Kp_err):0;
- let essRamp=Kv_err===0?Infinity:isFinite(Kv_err)?inA/Kv_err:0;
- let essPar=Ka_err===0?Infinity:isFinite(Ka_err)?inA/Ka_err:0;
- const essCurr=inTy==='step'?essStep:inTy==='ramp'?essRamp:inTy==='par'?essPar:NaN;
-
+ // Error en estado estacionario
+ let sT=0;while(sT<dL.length-1&&Math.abs(dL[dL.length-1-sT])<1e-11)sT++;
+ const kS=nL[nL.length-1]/dL[dL.length-1-sT],inA=V('ia'),inTy=$('it').value;
+ const Kp_=sT===0?kS:Infinity,Kv_=sT===0?0:sT===1?kS:Infinity,Ka_=sT<2?0:sT===2?kS:Infinity;
+ const eS=isFinite(Kp_)?inA/(1+Kp_):0,eR=Kv_===0?Infinity:isFinite(Kv_)?inA/Kv_:0,eP=Ka_===0?Infinity:isFinite(Ka_)?inA/Ka_:0;
+ const essCurr=inTy==='step'?eS:inTy==='ramp'?eR:inTy==='par'?eP:NaN;
+ let dRows='';
+ if(!isP&&!isOL&&mx<-1e-6){
+  const d0=dCL[dCL.length-1],dA=V('da');
+  const yIn=gn[gn.length-1]*dC[dC.length-1]*dH[dH.length-1]/d0*dA,yOut=dL[dL.length-1]/d0*dA;
+  dRows=`<tr><td>Perturbación escalón d = ${f(dA)} en la entrada</td><td>y<sub>ss</sub> = [G/(1+L)](0)·d</td><td><b>${f(yIn)}</b></td></tr>
+   <tr><td>Perturbación escalón d = ${f(dA)} en la salida</td><td>y<sub>ss</sub> = S(0)·d</td><td><b>${f(yOut)}</b></td></tr>`;
+ }
  $('ess-out').innerHTML=`
-  <b>Tipo de sistema (polos de L(s) en el origen):</b> Tipo ${sysType}<br>
-  <b>Constantes de error:</b> $K_p = ${f(Kp_err)}$, &nbsp; $K_v = ${f(Kv_err)}$, &nbsp; $K_a = ${f(Ka_err)}$
-  <table>
-    <tr><th>Entrada $r(t)$ (Amplitud A=${f(inA)})</th><th>Fórmula</th><th>Error $e_{ss}$</th></tr>
-    <tr><td>Escalón $A\\cdot u(t)$</td><td>$A / (1 + K_p)$</td><td><b>${f(essStep)}</b></td></tr>
-    <tr><td>Rampa $A\\cdot t$</td><td>$A / K_v$</td><td><b>${f(essRamp)}</b></td></tr>
-    <tr><td>Parábola $\\frac{1}{2}A\\cdot t^2$</td><td>$A / K_a$</td><td><b>${f(essPar)}</b></td></tr>
-  </table>
-  <div class="mu">${mx>=-1e-6?'⚠️ El sistema no es estable: el teorema del valor final no aplica.':'Nota: válido para realimentación unitaria equivalente.'}</div>`;
+  <b>Tipo de sistema (polos de L(s) en el origen):</b> Tipo ${sT}<br>
+  <b>Constantes de error:</b> K<sub>p</sub> = ${f(Kp_)}, &nbsp; K<sub>v</sub> = ${f(Kv_)}, &nbsp; K<sub>a</sub> = ${f(Ka_)}
+  <table><tr><th>Entrada r(t) (A=${f(inA)})</th><th>Fórmula</th><th>e<sub>ss</sub></th></tr>
+   <tr><td>Escalón A·u(t)</td><td>A / (1 + K<sub>p</sub>)</td><td><b>${f(eS)}</b></td></tr>
+   <tr><td>Rampa A·t</td><td>A / K<sub>v</sub></td><td><b>${f(eR)}</b></td></tr>
+   <tr><td>Parábola ½·A·t²</td><td>A / K<sub>a</sub></td><td><b>${f(eP)}</b></td></tr>${dRows}</table>
+  <div class="mu">${isP?'ℹ️ Elige lazo abierto o cerrado: sin controlador ni realimentación e<sub>ss</sub> no aplica.':mx>=-1e-6?'⚠️ El sistema no es estable: el teorema del valor final no aplica.':'Nota: válido para realimentación unitaria equivalente (H = 1).'}</div>`;
 
- // Respuesta en frecuencia (L, S, T)
+ // Respuesta en frecuencia
  const mg=[...roots(nL),...roots(dL),...po].map(p=>Math.hypot(...p)).filter(m=>m>1e-6);
  const w0=10**(Math.floor(Math.log10(mg.length?Math.min(...mg):1))-2),w1=10**(Math.ceil(Math.log10(mg.length?Math.max(...mg):1))+2);
  const NW=600,W=[],mag=[],ph=[],re=[],im=[],magS=[],magT=[];
  let m=0;while(m<dL.length-1&&Math.abs(dL[dL.length-1-m])<1e-11)m++;
- let Ms=0,wMs=0;
+ let Ms=0;
  for(let i=0;i<NW;i++){
-  const w=w0*(w1/w0)**(i/(NW-1)),s=[0,w];
-  const z=cd(pe(nL,s),pe(dL,s));
-  const zS=cd(pe(nS,s),pe(dCL,s));
-  const zT=cd(pe(nT,s),pe(dCL,s));
-  const mS_abs=Math.hypot(...zS);
-  if(mS_abs>Ms){Ms=mS_abs;wMs=w}
-  W.push(w);re.push(z[0]);im.push(z[1]);
-  mag.push(20*Math.log10(Math.hypot(...z)));
-  magS.push(20*Math.log10(mS_abs));
-  magT.push(20*Math.log10(Math.hypot(...zT)));
+  const w=w0*(w1/w0)**(i/(NW-1)),s=[0,w],z=cd(pe(nL,s),pe(dL,s)),zS=cd(pe(nS,s),pe(dCL,s)),zT=cd(pe(nT,s),pe(dCL,s)),mS=Math.hypot(...zS);
+  if(mS>Ms)Ms=mS;
+  W.push(w);re.push(z[0]);im.push(z[1]);mag.push(20*Math.log10(Math.hypot(...z)));magS.push(20*Math.log10(mS));magT.push(20*Math.log10(Math.hypot(...zT)));
   let p=Math.atan2(z[1],z[0])*180/Math.PI;
   if(i==0){if(m>=2&&p>0)p-=360}else{const q=ph[i-1];while(p-q>180)p-=360;while(p-q<-180)p+=360}ph.push(p)
  }
@@ -398,7 +372,7 @@ function calc(){
  let pmv=gc?((gc.p+180)%360+360)%360:null;if(pmv>180)pmv-=360;
  const pcm=pc.length?pc.reduce((a,b)=>a.g<b.g?a:b):null;
 
- // Simulación temporal
+ // Simulación temporal (RK4 con buffers preasignados)
  const n=gd.length-1,bn=Array(n-gn.length).fill(0).concat(gn),IN={ty:$('it').value,A:V('ia'),p:V('ip')},DS={l:$('dl').value,A:V('da'),t0:V('dt0')};
  let T=parseFloat($('T').value);
  if(!(T>0)){const a=po.map(p=>Math.abs(p[0])).filter(v=>v>1e-9);T=mx>1e-6?5/mx:mx<-1e-6&&a.length?6/Math.min(...a):20;
@@ -407,52 +381,43 @@ function calc(){
  const R=t=>{const{ty,A,p}=IN;return ty=='step'?A:ty=='ramp'?A*t:ty=='par'?A*t*t/2:ty=='sin'?A*Math.sin(2*Math.PI*p*t):ty=='pulse'?(t<p?A:0):(Math.floor(2*p*t)%2==0?A:-A)};
  const Dd=t=>t>=DS.t0?DS.A:0,di=DS.l=='in'?Dd:()=>0,dou=DS.l=='out'?Dd:()=>0;
 
- // Estado X: [0..n-1] planta, [n] sensor, [n+1] integral, [n+2] filtro derivativo
- const F=(t,X,rec)=>{
+ // Estado: [0..n-1] planta, [n] sensor, [n+1] integral, [n+2] filtro derivativo
+ const N=n+3,F=(t,X,dx,rec)=>{
   let yp=dou(t);for(let j=0;j<n;j++)yp+=bn[n-1-j]*X[j];
-  const ym=ts>0?X[n]:ks*yp;
-  const e=(isPlantOnly||isOpenLoop)?R(t):(R(t)-ym);
-  const u=isPlantOnly?R(t):(kp*e+ki*X[n+1]+(kd?kd*(e-X[n+2])/tf:0));
-  const dx=new Array(n+3);
+  const ym=ts>0?X[n]:ks*yp,e=(isP||isOL)?R(t):(R(t)-ym);
+  const u=isP?R(t):(kp*e+ki*X[n+1]+(kd?kd*(e-X[n+2])/tf:0));
   for(let j=0;j<n-1;j++)dx[j]=X[j+1];
   let s=u+di(t);for(let k=1;k<=n;k++)s-=gd[k]*X[n-k];dx[n-1]=s;
-  dx[n]=ts>0?(ks*yp-X[n])/ts:0;
-  dx[n+1]=(!isPlantOnly&&ki)?e:0;
-  dx[n+2]=(!isPlantOnly&&kd)?(e-X[n+2])/tf:0;
-  if(rec){rec.y=isOpenLoop?ym:yp;rec.u=u;rec.e=R(t)-ym}
-  return dx
+  dx[n]=ts>0?(ks*yp-X[n])/ts:0;dx[n+1]=(!isP&&ki)?e:0;dx[n+2]=(!isP&&kd)?(e-X[n+2])/tf:0;
+  if(rec){rec.y=isOL?ym:yp;rec.u=u;rec.e=R(t)-ym}
  };
-
- const NS=Math.ceil(T/dt),rc=Math.max(1,Math.floor(NS/1500)),Tt=[],Y=[],Rr=[],U=[],E=[],rec={};let X=new Array(n+3).fill(0);
+ const NS=Math.ceil(T/dt),rc=Math.max(1,Math.floor(NS/1500)),Tt=[],Y=[],Rr=[],U=[],E=[],rec={};
+ const X=new Float64Array(N),k1=new Float64Array(N),k2=new Float64Array(N),k3=new Float64Array(N),k4=new Float64Array(N),tmp=new Float64Array(N),h2=dt/2;
  for(let i=0;i<=NS;i++){const t=i*dt;
-  if(i%rc==0){F(t,X,rec);Tt.push(t);Y.push(rec.y);Rr.push(R(t));U.push(rec.u);E.push(rec.e)}
-  const k1=F(t,X),k2=F(t+dt/2,X.map((v,j)=>v+dt/2*k1[j])),k3=F(t+dt/2,X.map((v,j)=>v+dt/2*k2[j])),k4=F(t+dt,X.map((v,j)=>v+dt*k3[j]));
-  X=X.map((v,j)=>v+dt/6*(k1[j]+2*k2[j]+2*k3[j]+k4[j]));if(!X.every(v=>Math.abs(v)<1e12))break}
+  if(i%rc==0){F(t,X,k1,rec);Tt.push(t);Y.push(rec.y);Rr.push(R(t));U.push(rec.u);E.push(rec.e)}
+  F(t,X,k1);for(let j=0;j<N;j++)tmp[j]=X[j]+h2*k1[j];
+  F(t+h2,tmp,k2);for(let j=0;j<N;j++)tmp[j]=X[j]+h2*k2[j];
+  F(t+h2,tmp,k3);for(let j=0;j<N;j++)tmp[j]=X[j]+dt*k3[j];
+  F(t+dt,tmp,k4);let ok=true;
+  for(let j=0;j<N;j++){X[j]+=dt/6*(k1[j]+2*k2[j]+2*k3[j]+k4[j]);if(!(Math.abs(X[j])<1e12))ok=false}
+  if(!ok)break}
 
  // Métricas
- const M={os:'—',tr:'—',ts:'—'},yf=Y[Y.length-1];
+ const M={os:'—',tr:'—',ts:'—',tp:'—'},yf=Y[Y.length-1];
  if(IN.ty=='step'&&DS.l=='none'&&mx<-1e-6&&Math.abs(yf)>1e-9){
-  const sg=Math.sign(yf),yn=Y.map(v=>v*sg),Fv=Math.abs(yf);M.os=f(Math.max(0,(Math.max(...yn)-Fv)/Fv*100))+' %';
+  const sg=Math.sign(yf),yn=Y.map(v=>v*sg),Fv=Math.abs(yf),pk=Math.max(...yn);M.os=f(Math.max(0,(pk-Fv)/Fv*100))+' %';M.tp=f(Tt[yn.indexOf(pk)])+' s';
   const i1=yn.findIndex(v=>v>=.1*Fv),i9=yn.findIndex(v=>v>=.9*Fv);if(i1>=0&&i9>=0)M.tr=f(Tt[i9]-Tt[i1])+' s';
   let k=yn.length-1;while(k>=0&&Math.abs(yn[k]-Fv)<=.02*Fv)k--;M.ts=f(Tt[Math.min(k+1,Tt.length-1)])+' s'}
 
- const cells=[
-  ['Estado',est[0]],
-  ['Margen de fase',pmv===null?'—':f(pmv)+'°'],
-  ['Margen de ganancia',pcm?f(pcm.g)+' dB':'∞'],
-  ['Pico Sensib. Ms',isFinite(Ms)?f(Ms)+' ('+f(20*Math.log10(Ms))+' dB)':'—'],
-  ['Sobrepaso',M.os],
-  ['t. de establecimiento',M.ts],
-  ['Error final e(T)',f(E[E.length-1])],
-  ['e_ss teórico',mx<-1e-6&&!isNaN(essCurr)?f(essCurr):'—']
- ];
+ const cells=[['Estado',est[0]],['Margen de fase',pmv===null?'—':f(pmv)+'°'],['Margen de ganancia',pcm?f(pcm.g)+' dB':'∞'],
+  ['Pico Sensib. Ms',isFinite(Ms)?f(Ms)+' ('+f(20*Math.log10(Ms))+' dB)':'—'],['Sobrepaso Mp',M.os],['Tiempo de pico tp',M.tp],['Tiempo de subida tr',M.tr],
+  ['t. de establecimiento',M.ts],['Error final e(T)',f(E[E.length-1])],['e_ss teórico',mx<-1e-6&&!isNaN(essCurr)?f(essCurr):'—']];
  $('met').innerHTML=cells.map(c=>`<div>${c[0]}<b>${c[1]}</b></div>`).join('');
 
- const pt=[];po.forEach(p=>{const a=Math.abs(p[1])<1e-7*(1+Math.abs(p[0]));if(a)pt.push(f(p[0]));else if(p[1]>0)pt.push(f(p[0])+' ± '+f(p[1])+'j')});
- $('pol').textContent=(isPlantOnly?'Polos de G(s): ':isOpenLoop?'Polos de L(s): ':'Polos de lazo cerrado: ')+pt.join(',  ')+(est[0]=='Estable'?'  →  todos en el semiplano izquierdo.':est[0]=='Inestable'?'  →  hay polos con parte real positiva.':'  →  polos sobre el eje imaginario.');
+ const pt=[];po.forEach(p=>{if(Math.abs(p[1])<1e-7*(1+Math.abs(p[0])))pt.push(f(p[0]));else if(p[1]>0)pt.push(f(p[0])+' ± '+f(p[1])+'j')});
+ $('pol').textContent=(isP?'Polos de G(s): ':isOL?'Polos de L(s): ':'Polos de lazo cerrado: ')+pt.join(',  ')+(est[0]=='Estable'?'  →  todos en el semiplano izquierdo.':est[0]=='Inestable'?'  →  hay polos con parte real positiva.':'  →  polos sobre el eje imaginario.');
 
- // Gráficas
- plot('c1',{t:isPlantOnly?'Respuesta de Planta G(s)':isOpenLoop?'Respuesta Lazo Abierto L(s)':'Respuesta temporal (Lazo Cerrado)',xl:'tiempo (s)',yl:'salida',series:[{x:Tt,y:Y,c:'--ac',n:'y(t) salida'},{x:Tt,y:Rr,c:'--mut',d:1,n:'r(t) referencia'}],vl:DS.l!='none'?[{x:DS.t0,c:'--c4',l:'perturbación'}]:[]});
+ plot('c1',{t:isP?'Respuesta de Planta G(s)':isOL?'Respuesta Lazo Abierto L(s)':'Respuesta temporal (Lazo Cerrado)',xl:'tiempo (s)',yl:'salida',series:[{x:Tt,y:Y,c:'--ac',n:'y(t) salida'},{x:Tt,y:Rr,c:'--mut',d:1,n:'r(t) referencia'}],vl:DS.l!='none'?[{x:DS.t0,c:'--c4',l:'perturbación'}]:[]});
  plot('c2',{t:'Señal de control y error',xl:'tiempo (s)',yl:'u, e',series:[{x:Tt,y:U,c:'--c4',n:'u(t) control'},{x:Tt,y:E,c:'--c2',n:'e(t) error'}]});
  const vl=[];if(gc)vl.push({x:gc.w,c:'--c3',l:'ω cruce ganancia'});if(pcm)vl.push({x:pcm.w,c:'--c4',l:'ω cruce fase'});
  plot('c3',{t:'Bode · magnitud de L(jω)',xl:'ω (rad/s)',yl:'dB',xlog:1,series:[{x:W,y:mag,c:'--ac'}],hl:[{y:0}],vl});
@@ -463,134 +428,103 @@ function calc(){
  plot('c7',{t:'Sensibilidad S(jω) y Complementaria T(jω)',xl:'ω (rad/s)',yl:'dB',xlog:1,series:[{x:W,y:magS,c:'--c2',n:'|S(jω)| Sensibilidad'},{x:W,y:magT,c:'--c5',n:'|T(jω)| Complementaria'}],hl:[{y:0},{y:6,c:'--c4'}]});
 }
 
-// ==========================================
-// HERRAMIENTAS DE ESTUDIO (EDO & POLE PLACEMENT)
-// ==========================================
+// ===== Laboratorio de estudio =====
 let lastEDO=null;
-function parsePolySide(str,varName){
- const s=str.replace(/\s+/g,'').replace(/-/g,'+-');
- const terms=s.split('+').filter(Boolean);
- const coeffs={};
+function parsePolySide(str,v){
+ const s=str.replace(/\s+/g,'').replace(/\(t\)/g,'').replace(/²/g,'2').replace(/(\d|\))e([+-])/gi,'$1E$2').replace(/([^E(])-/g,'$1+-').replace(/^-/,'+-'),
+  terms=s.split('+').filter(Boolean),co={};
+ const reD=new RegExp(`d(\\d*)${v}/dt\\1?$`),reP=new RegExp(`${v}('+)$`),reN=new RegExp(`${v}\\((\\d+)\\)$`);
  for(const t of terms){
-  let order=0,cStr=t;
-  const reD=new RegExp(`d(\\d*)${varName}/dt\\1?$`);
-  const reP=new RegExp(`${varName}('+)$`);
-  const reN=new RegExp(`${varName}\\((\\d+)\\)$`);
-  if(reD.test(t)){const m=t.match(reD);order=m[1]?parseInt(m[1]):1;cStr=t.replace(reD,'')}
-  else if(reP.test(t)){const m=t.match(reP);order=m[1].length;cStr=t.replace(reP,'')}
-  else if(reN.test(t)){const m=t.match(reN);order=parseInt(m[1]);cStr=t.replace(reN,'')}
-  else if(t.endsWith(varName)){order=0;cStr=t.slice(0,-varName.length)}
-  else throw Error(`Término no reconocido: "${t}"`);
-  cStr=cStr.replace(/\*$/,'');
-  const val=(cStr===''||cStr==='+')?1:(cStr==='-')?-1:parseFloat(cStr);
-  if(isNaN(val))throw Error(`Coeficiente inválido en "${t}"`);
-  coeffs[order]=(coeffs[order]||0)+val;
+  let o=0,c=t,m;
+  if(m=t.match(reD)){o=m[1]?+m[1]:1;c=t.replace(reD,'')}
+  else if(m=t.match(reP)){o=m[1].length;c=t.replace(reP,'')}
+  else if(m=t.match(reN)){o=+m[1];c=t.replace(reN,'')}
+  else if(t.endsWith(v))c=t.slice(0,-v.length);
+  else throw Error(`Término no reconocido: «${t}»`);
+  c=c.replace(/\*$/,'');
+  const val=(c===''||c==='+')?1:c==='-'||c==='+-'?-1:parseFloat(c.replace('E','e'));
+  if(isNaN(val))throw Error(`Coeficiente inválido en «${t}»`);
+  co[o]=(co[o]||0)+val;
  }
- const maxOrd=Math.max(0,...Object.keys(coeffs).map(Number));
- const arr=[];for(let i=maxOrd;i>=0;i--)arr.push(coeffs[i]||0);
- return tr(arr);
+ const mo=Math.max(0,...Object.keys(co).map(Number)),a=[];for(let i=mo;i>=0;i--)a.push(co[i]||0);
+ return tr(a);
 }
-
 function parseEDO(){
  try{
-  const raw=$('edo-in').value;
-  const sides=raw.split('=');
-  if(sides.length!==2)throw Error('La ecuación debe tener exactamente un signo "=".');
-  let den=parsePolySide(sides[0],'y');
-  let num=parsePolySide(sides[1],'u');
+  const sides=$('edo-in').value.split('=');
+  if(sides.length!==2)throw Error('La ecuación debe tener exactamente un signo «=».');
+  const den=parsePolySide(sides[0],'y'),num=parsePolySide(sides[1],'u');
   if(den[0]===0)throw Error('El coeficiente principal de y no puede ser 0.');
-  const d0=den[0];
-  const denNorm=den.map(v=>v/d0),numNorm=num.map(v=>v/d0);
-  lastEDO={num:numNorm,den:denNorm};
-  $('edo-out').innerHTML=`
-   <b>1. Transformada de Laplace (C.I. = 0):</b><br>
-   <span class="mono">(${PS(den)}) Y(s) = (${PS(num)}) U(s)</span><br>
-   <b>2. Función de Transferencia $G(s) = Y(s)/U(s)$:</b><br>
-   <span class="mono" style="color:var(--ac)">G(s) = ${TFStr(numNorm,denNorm)}</span><hr style="border:0;border-top:1px solid var(--bd);margin:6px 0">
-   ${analyzePlant(numNorm,denNorm)}`;
+  const d0=den[0],dn=den.map(v=>v/d0),nn=num.map(v=>v/d0);
+  lastEDO={num:nn,den:dn};
+  $('edo-out').innerHTML=`<b>1. Transformada de Laplace (C.I. = 0):</b><br><span class="mono">(${PS(den)}) Y(s) = (${PS(num)}) U(s)</span><br>
+   <b>2. Función de transferencia G(s) = Y(s)/U(s):</b><br><span class="mono" style="color:var(--ac)">G(s) = ${TFStr(nn,dn)}</span>
+   ${num.length>=den.length?'<div style="color:var(--c4)">⚠️ No es estrictamente propia: el simulador la rechazará.</div>':''}
+   <hr style="border:0;border-top:1px solid var(--bd);margin:6px 0">${analyzePlant(nn,dn)}`;
  }catch(e){$('edo-out').innerHTML=`<span style="color:var(--c2)">⚠️ ${e.message}</span>`}
 }
-function applyEDO(){if(!lastEDO)parseEDO();if(lastEDO){$('gn').value=lastEDO.num.join(' ');$('gd').value=lastEDO.den.join(' ');$('pre').value='c';setTab('sim');run()}}
+function applyEDO(){parseEDO();if(lastEDO&&$('edo-out').querySelector('.mono')){$('gn').value=lastEDO.num.join(' ');$('gd').value=lastEDO.den.join(' ');$('pre').value='c';store('v:gn',$('gn').value);store('v:gd',$('gd').value);store('v:pre','c');setTab('sim');run()}}
 
-// Asignación de polos analítica
 let designedCtrl=null;
 function parseComplexList(str){
  return str.split(',').map(s=>s.trim()).filter(Boolean).map(tok=>{
-  const clean=tok.replace(/i/g,'j').replace(/\s+/g,'');
-  if(!clean.includes('j'))return[parseFloat(clean),0];
-  const m=clean.match(/^([+-]?\d*\.?\d+)?([+-]\d*\.?\d*)j$/);
-  if(!m)throw Error(`Polo complejo inválido: "${tok}". Usa formato a+bj (ej. -2+3j)`);
-  const re=m[1]?parseFloat(m[1]):0;
-  const im=(m[2]==='+'||m[2]==='')?1:(m[2]==='-')?-1:parseFloat(m[2]);
-  return[re,im];
+  const c=tok.replace(/i/g,'j').replace(/\s+/g,'');
+  if(!c.includes('j')){const r=parseFloat(c);if(isNaN(r))throw Error(`Polo inválido: «${tok}»`);return[r,0]}
+  const m=c.match(/^([+-]?\d*\.?\d+)?([+-]\d*\.?\d*)j$/);
+  if(!m)throw Error(`Polo complejo inválido: «${tok}». Usa el formato a+bj (ej. -2+3j)`);
+  return[m[1]?parseFloat(m[1]):0,(m[2]==='+')?1:(m[2]==='-')?-1:parseFloat(m[2])];
  });
 }
 function polyFromRoots(rts){
  let p=[1];
- for(const [r,im] of rts){
-  if(Math.abs(im)<1e-9)p=pm(p,[1,-r]);
-  else if(im>0)p=pm(p,[1,-2*r,r*r+im*im]);
- }
+ for(const [r,im] of rts){if(Math.abs(im)<1e-9)p=pm(p,[1,-r]);else if(im>0)p=pm(p,[1,-2*r,r*r+im*im])}
  return p;
 }
-
+// Polos dominantes desde Mp y ts (criterio 2 %: σ = 4/ts)
+function genPoles(){
+ try{
+  const Mp=parseFloat($('spec-mp').value)/100,tsv=parseFloat($('spec-ts').value);
+  if(!(Mp>0&&Mp<1)||!(tsv>0))throw Error('Mp debe estar entre 0 y 100 % y ts debe ser positivo.');
+  const lm=Math.log(Mp),z=-lm/Math.sqrt(Math.PI**2+lm*lm),sg=4/tsv,wn=sg/z,wd=wn*Math.sqrt(1-z*z),nP=parseCoef($('gd').value).length-1,g=v=>+v.toPrecision(4);
+  $('des-pol').value=`${-g(sg)}+${g(wd)}j, ${-g(sg)}-${g(wd)}j`+(nP===2?`, ${-g(5*sg)}`:'');
+  $('pol-des-out').innerHTML=`ζ = ${f(z)}, ω<sub>n</sub> = ${f(wn)} rad/s, σ = ${f(sg)}, ω<sub>d</sub> = ${f(wd)} rad/s${nP===2?'<br>Se añadió un tercer polo real en −5σ (más rápido que los dominantes) para el PID.':''}<br>Pulsa «Calcular controlador».`;
+ }catch(e){$('pol-des-out').innerHTML=`<span style="color:var(--c2)">⚠️ ${e.message}</span>`}
+}
 function designPoles(){
  try{
-  const gn=tr($('gn').value.trim().split(/[\s,;]+/).map(Number));
-  let gd=tr($('gd').value.trim().split(/[\s,;]+/).map(Number));
-  const g0=gd[0];const b=gn.map(v=>v/g0);gd=gd.map(v=>v/g0);
-  if(b.length>1)throw Error('El diseño analítico directo soporta plantas sin ceros finitos G(s) = b₀ / D(s).');
-  const b0=b[0];
-  const rts=parseComplexList($('des-pol').value);
-  const Pdes=polyFromRoots(rts);
-  const nP=gd.length-1,nDes=Pdes.length-1;
-  let html='',res=null;
-
-  if(nP===1&&nDes===1){
-   // Planta: 1/(s + a0), Control P: kp -> s + a0 + kp*b0 = s + p1
-   const a0=gd[1],p1=Pdes[1],kp=(p1-a0)/b0;
-   res={ty:'P',kp,ki:0,kd:0};
-   html=`<b>Controlador P:</b> $K_p = ${f(kp)}$<br>Polinomio deseado: $s + ${f(p1)}$`;
-  }else if(nP===1&&nDes===2){
-   // Planta: 1/(s + a0), Control PI: (kp*s + ki)/s -> s² + (a0 + kp*b0)s + ki*b0 = s² + p1*s + p2
-   const a0=gd[1],p1=Pdes[1],p2=Pdes[2],kp=(p1-a0)/b0,ki=p2/b0;
-   res={ty:'PI',kp,ki,kd:0};
-   html=`<b>Controlador PI:</b> $K_p = ${f(kp)}, \\quad K_i = ${f(ki)}$<br>Polinomio deseado: $${PS(Pdes)}$`;
-  }else if(nP===2&&nDes===2){
-   // Planta: 1/(s² + a1*s + a0), Control PD: kd*s + kp -> s² + (a1 + kd*b0)s + (a0 + kp*b0)
-   const a1=gd[1],a0=gd[2],p1=Pdes[1],p2=Pdes[2],kd=(p1-a1)/b0,kp=(p2-a0)/b0;
-   res={ty:'PD',kp,ki:0,kd};
-   html=`<b>Controlador PD:</b> $K_p = ${f(kp)}, \\quad K_d = ${f(kd)}$<br>Polinomio deseado: $${PS(Pdes)}$`;
-  }else if(nP===2&&nDes===3){
-   // Planta: 1/(s² + a1*s + a0), Control PID: (kd*s² + kp*s + ki)/s -> s³ + (a1 + kd*b0)s² + (a0 + kp*b0)s + ki*b0
-   const a1=gd[1],a0=gd[2],p1=Pdes[1],p2=Pdes[2],p3=Pdes[3];
-   const kd=(p1-a1)/b0,kp=(p2-a0)/b0,ki=p3/b0;
-   res={ty:'PID',kp,ki,kd};
-   html=`<b>Controlador PID:</b> $K_p = ${f(kp)}, \\quad K_i = ${f(ki)}, \\quad K_d = ${f(kd)}$<br>Polinomio deseado: $${PS(Pdes)}$`;
-  }else{
-   throw Error(`Planta de orden ${nP} con ${nDes} polos deseados. Para orden ${nP}, ingresa ${nP} polos (P/PD) o ${nP+1} polos (PI/PID).`);
-  }
-  designedCtrl=res;
-  $('btn-app-pol').disabled=false;
-  $('pol-des-out').innerHTML=html;
+  const gn=parseCoef($('gn').value);let gd=parseCoef($('gd').value);
+  const g0=gd[0],b=gn.map(v=>v/g0);gd=gd.map(v=>v/g0);
+  if(b.length>1)throw Error('El diseño analítico directo soporta plantas sin ceros finitos: G(s) = b₀ / D(s).');
+  const b0=b[0],Pd=polyFromRoots(parseComplexList($('des-pol').value)),nP=gd.length-1,nD=Pd.length-1;
+  let res,html;
+  if(nP===1&&nD===1){const kp=(Pd[1]-gd[1])/b0;res={ty:'P',kp,ki:0,kd:0};html=`<b>Controlador P:</b> Kp = ${f(kp)}`}
+  else if(nP===1&&nD===2){const kp=(Pd[1]-gd[1])/b0,ki=Pd[2]/b0;res={ty:'PI',kp,ki,kd:0};html=`<b>Controlador PI:</b> Kp = ${f(kp)}, Ki = ${f(ki)}`}
+  else if(nP===2&&nD===2){const kd=(Pd[1]-gd[1])/b0,kp=(Pd[2]-gd[2])/b0;res={ty:'PD',kp,ki:0,kd};html=`<b>Controlador PD:</b> Kp = ${f(kp)}, Kd = ${f(kd)}`}
+  else if(nP===2&&nD===3){const kd=(Pd[1]-gd[1])/b0,kp=(Pd[2]-gd[2])/b0,ki=Pd[3]/b0;res={ty:'PID',kp,ki,kd};html=`<b>Controlador PID:</b> Kp = ${f(kp)}, Ki = ${f(ki)}, Kd = ${f(kd)}`}
+  else throw Error(`Planta de orden ${nP} con ${nD} polos deseados. Para orden ${nP}, ingresa ${nP} polos (P/PD) o ${nP+1} polos (PI/PID).`);
+  html+=`<br>Polinomio deseado: <span class="mono">${PS(Pd)}</span><div class="mu">El simulador usa derivada filtrada (Tf), así que la respuesta puede diferir ligeramente del diseño ideal. Con ceros del controlador, el sobrepaso real suele ser mayor que el de los polos dominantes.</div>`;
+  designedCtrl=res;$('btn-app-pol').disabled=false;$('pol-des-out').innerHTML=html;
  }catch(e){$('pol-des-out').innerHTML=`<span style="color:var(--c2)">⚠️ ${e.message}</span>`;$('btn-app-pol').disabled=true}
 }
-
 function applyPoles(){
  if(!designedCtrl)return;
- $('mode').value='cl';$('ct').value=designedCtrl.ty;
- $('kp').value=+designedCtrl.kp.toPrecision(5);
- $('ki').value=+designedCtrl.ki.toPrecision(5);
- $('kd').value=+designedCtrl.kd.toPrecision(5);
- $('ks').value=1;$('ts').value=0;
+ const d=designedCtrl,set=(i,v)=>{$(i).value=v;store('v:'+i,v)};
+ set('mode','cl');set('ct',d.ty);set('kp',+d.kp.toPrecision(5));set('ki',+d.ki.toPrecision(5));set('kd',+d.kd.toPrecision(5));set('ks',1);set('ts',0);
  setTab('sim');run();
 }
 
+// ===== Arranque, persistencia y eventos =====
 function run(){try{calc()}catch(e){$('err').textContent=e.message;$('err').hidden=false}}
 let q;const sched=()=>{cancelAnimationFrame(q);q=requestAnimationFrame(run)};
-document.querySelectorAll('input,select').forEach(e=>{if(!['edo-in','des-pol'].includes(e.id))e.addEventListener('input',sched)});
-$('pre').addEventListener('change',()=>{const p=PR[$('pre').value];if(p){$('gn').value=p[1];$('gd').value=p[2]}sched()});
-['gn','gd'].forEach(i=>$(i).addEventListener('input',()=>{$('pre').value='c'}));
+function resetAll(){try{localStorage.clear()}catch(e){}location.reload()}
+const fields=[...document.querySelectorAll('input[id],select[id]')];
+fields.forEach(e=>{const v=load('v:'+e.id);if(v!==null)e.value=v});
+const sb=load('sb');if(sb){selBlocks=new Set(sb.split(',').filter(b=>BLOCKS.includes(b)));if(!selBlocks.size)selBlocks=new Set(['G']);
+ document.querySelectorAll('#tf-chips .chip').forEach(el=>el.classList.toggle('on',selBlocks.has(el.dataset.b)))}
+fields.forEach(e=>{e.addEventListener('input',()=>store('v:'+e.id,e.value));
+ if(!['edo-in','des-pol','spec-mp','spec-ts'].includes(e.id))e.addEventListener('input',sched)});
+$('pre').addEventListener('change',()=>{const p=PR[$('pre').value];if(p){$('gn').value=p[1];$('gd').value=p[2];store('v:gn',p[1]);store('v:gd',p[2])}sched()});
+['gn','gd'].forEach(i=>$(i).addEventListener('input',()=>{$('pre').value='c';store('v:pre','c')}));
 addEventListener('resize',sched);matchMedia('(prefers-color-scheme:dark)').addEventListener('change',sched);
 parseEDO();run();
 </script></body></html>
